@@ -9,3 +9,4 @@ __pycache__/
 
 # Zgodnie z frameworkiem, ignorujemy prompty
 /prompts/
+/notebooks/
