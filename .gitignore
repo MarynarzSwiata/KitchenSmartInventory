@@ -7,6 +7,9 @@ __pycache__/
 # VS Code
 .vscode/
 
-# Zgodnie z frameworkiem, ignorujemy prompty
+# Ignored files
+PROJECT_LOG.md
+
+# Ignored directories
 /prompts/
 /notebooks/
