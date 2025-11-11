@@ -88,3 +88,27 @@ def create_location(location_data: Location, service: LocationService = Depends(
     instance with a database session.
     """
     return service.create_location(location_data)
+
+
+@app.get("/locations", response_model=list[Location])
+def get_all_locations(service: LocationService = Depends()):
+    """
+    Retrieve all locations from the database.
+
+    Args:
+        service: LocationService injected by FastAPI's dependency injection
+
+    Returns:
+        list[Location]: List of all location objects in the database
+
+    Example response:
+        [
+            {"id": 1, "name": "Fridge"},
+            {"id": 2, "name": "Pantry"},
+            {"id": 3, "name": "Freezer"}
+        ]
+
+    The response_model=list[Location] ensures FastAPI validates that we're
+    returning a list of Location objects and formats the output correctly.
+    """
+    return service.get_all_locations()
