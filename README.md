@@ -1,50 +1,61 @@
 # KitchenSmartInventory API
 
-Welcome to the KitchenSmartInventory project. This is a back-end API built with FastAPI to manage kitchen inventory (fridge, pantry, etc.) and generate smart shopping lists.
+Welcome to the KitchenSmartInventory API project. This is a backend API (built with FastAPI) to manage home kitchen inventory (fridge, pantry, etc.) and, in the future, generate smart shopping lists.
 
-This project is developed following the own framework, focusing on clean architecture, testability, and step-by-step learning.
-
----
-
-## 🚀 v0.1: Core Logic (MVP)
-
-The goal of version 0.1 is to build the fundamental business logic for the application, assuming a single-user context.
-
-### Features (v0.1)
-
-- **Product Definitions:** Define base products (e.g., "Milk 3.2%").
-- **Locations:** Manage different storage locations (e.g., "Fridge", "Pantry", "Freezer").
-- **Stores:** Manage stores where items are purchased (e.g., "Lidl", "Local Market").
-- **Inventory Management:** Track items in specific locations (what, how much, where).
-  - Includes timestamps (`created_at`, `updated_at`) for future analysis.
-  - Includes the store where the item was last purchased.
-- **Shopping List:** Manually manage a shopping list (add/remove items).
-
-### Features (v0.2 - Planned)
-
-- **User Authentication:** Full user login, registration, and password management (JWT).
-- **Automated Lists:** Automatically move items to the shopping list when inventory is low.
-- **Analytics:** Basic patterns on user consumption.
+This project is developed following the `PROJECT_PROMPT_v3.5` framework, focusing on a clean, layered architecture, testability, and step-by-step learning.
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Framework:** **FastAPI**
-- **Database:** **SQLite** (for v0.1, suitable for development)
+- **Database:** **SQLite** (for development, `database.db`)
 - **ORM / Validation:** **SQLModel** (combines Pydantic and SQLAlchemy)
 - **Server:** **Uvicorn**
 - **Linting/Formatting:** **Flake8** & **Black**
+- **Project Management:** **`CONTEXT.md`** (as the "single source of truth")
 
-## ⚙️ Project Setup
+---
 
-1.  Clone the repository:
-    `git clone [YOUR_REPO_URL]`
-2.  Navigate to the project directory:
-    `cd KitchenSmartInventory`
-3.  Create a virtual environment:
-    `python -m venv .venv`
-4.  Activate the environment:
-    `.venv\Scripts\activate`
-5.  Install dependencies:
-    `pip install -r requirements.txt` (Note: We will create this file soon)
+## 🧭 Project Status (v0.2)
+
+### ✅ v0.1: Foundations (Completed)
+
+Version 0.1 focused on building the application's foundation, data models, and basic configuration modules.
+
+- **[✓] Phase 1: Setup:** Environment, `venv`, `gitignore`, and dependencies.
+- **[✓] Phase 2: Data Models:** Defined all tables in `src/models.py` (`Location`, `Store`, `Product`, `InventoryItem`).
+- **[✓] Phase 3: `Location` Module:** Full CRUD (Service + API: `POST` & `GET /locations`).
+- **[✓] Phase 4: `Store` Module:** Full CRUD (Service + API: `POST` & `GET /stores`).
+
+### 🚀 v0.2: Core Features (In Progress)
+
+Version 0.2 implements the core business logic of the application.
+
+- **[ ] Phase 2.5 (Refactor):** Add timestamp fields (`created_at`, `updated_at`) to all models.
+- **[ ] Phase 5 (Products):** Implement the product catalog management module (`/products`).
+- **[ ] Phase 6 (Inventory):** Implement the inventory stock management module (`/inventory_items`).
+- **[ ] Phase 7 (Shopping List):** Implement the manual shopping list module (`/shopping-list`).
+- **[ ] Phase 8 (Technical Debt):** Clean up dependencies (`requirements.txt`).
+
+---
+
+## ⚙️ Running the Project
+
+1.  Ensure you have Python 3.11+.
+2.  Clone the repository.
+3.  Create and activate a virtual environment:
+    ```shell
+    python -m venv .venv
+    .\.venv\Scripts\activate
+    ```
+4.  Install dependencies (using the "polluted" file for now):
+    ```shell
+    pip install -r requirements.txt
+    ```
+5.  Run the development server from the root folder:
+    ```shell
+    uvicorn src.main:app --reload
+    ```
+6.  Open the auto-generated API documentation (Swagger UI) in your browser:
+    **`http://127.0.0.1:8000/docs`**
