@@ -10,8 +10,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from src.database import create_db_and_tables
 from src import models  # CRITICAL: Import models so SQLModel can discover them
-from src.models import Location
+from src.models import Location, Store
 from src.services.location_service import LocationService
+from src.services.store_service import StoreService
 
 # ============================================================================
 # APPLICATION INITIALIZATION
@@ -112,3 +113,51 @@ def get_all_locations(service: LocationService = Depends()):
     returning a list of Location objects and formats the output correctly.
     """
     return service.get_all_locations()
+
+
+@app.post("/stores", response_model=Store)
+def create_store(store_data: Store, service: StoreService = Depends()):
+    """
+    Create a new store in the database.
+
+    Args:
+        store_data: Store object from request body (e.g., {"name": "Lidl"})
+        service: StoreService injected by FastAPI's dependency injection
+
+    Returns:
+        Store: The created store with its database-assigned ID
+
+    Example request body:
+        {"name": "Lidl"}
+
+    Example response:
+        {"id": 1, "name": "Lidl"}
+
+    The response_model=Store ensures FastAPI validates and formats the output.
+    The Depends() automatically creates a StoreService instance with a database session.
+    """
+    return service.create_store(store_data)
+
+
+@app.get("/stores", response_model=list[Store])
+def get_all_stores(service: StoreService = Depends()):
+    """
+    Retrieve all stores from the database.
+
+    Args:
+        service: StoreService injected by FastAPI's dependency injection
+
+    Returns:
+        list[Store]: List of all store objects in the database
+
+    Example response:
+        [
+            {"id": 1, "name": "Lidl"},
+            {"id": 2, "name": "Biedronka"},
+            {"id": 3, "name": "Tesco"}
+        ]
+
+    The response_model=list[Store] ensures FastAPI validates that we're
+    returning a list of Store objects and formats the output correctly.
+    """
+    return service.get_all_stores()
