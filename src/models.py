@@ -2,7 +2,8 @@
 Database models for Kitchen Smart Inventory application.
 
 This module defines all SQLModel classes that represent database tables.
-SQLModel combines SQLAlchemy (for database operations) with Pydantic (for data validation).
+SQLModel combines SQLAlchemy (for database operations) with
+Pydantic (for data validation).
 
 Models:
 - Location: Physical locations in the kitchen (e.g., Fridge, Pantry)
