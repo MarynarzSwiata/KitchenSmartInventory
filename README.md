@@ -2,8 +2,6 @@
 
 Welcome to the KitchenSmartInventory API project. This is a backend API (built with FastAPI) to manage home kitchen inventory (fridge, pantry, etc.) and, in the future, generate smart shopping lists.
 
-This project is developed following the `PROJECT_PROMPT_v3.5` framework, focusing on a clean, layered architecture, testability, and step-by-step learning.
-
 ---
 
 ## 🛠️ Technology Stack
