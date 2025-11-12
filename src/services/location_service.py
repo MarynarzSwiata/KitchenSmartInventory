@@ -9,7 +9,7 @@ The service uses Dependency Injection to receive a database session from FastAPI
 """
 
 from fastapi import Depends
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from src.database import get_session
 from src.models import Location
 
@@ -59,18 +59,32 @@ class LocationService:
         self.session.refresh(location_data)
         return location_data
 
-    def get_all_locations(self) -> list[Location]:
+    def get_all_locations(self, offset: int = 0, limit: int = 100) -> dict:
         """
-        Retrieve all locations from the database.
+        Retrieve all locations from the database with pagination.
+
+        Args:
+            offset: Number of records to skip (for pagination)
+            limit: Maximum number of records to return
 
         Returns:
-            list[Location]: List of all location objects in the database
-                           Returns empty list if no locations exist
+            dict: Dictionary with 'total' count and 'items' list of locations
 
         Process:
-            1. Create a SELECT query for all Location records
-            2. Execute the query and fetch all results
-            3. Return the list of Location objects
+            1. Create separate queries for counting and fetching items
+            2. Execute count query to get total number of locations
+            3. Apply pagination to items query and fetch results
+            4. Return dictionary with total and items
         """
-        locations = self.session.exec(select(Location)).all()
-        return list(locations)
+        # Build two separate queries
+        items_query = select(Location)
+        count_query = select(func.count()).select_from(Location)
+
+        # Execute count query
+        total = self.session.exec(count_query).one()
+
+        # Apply pagination and execute items query
+        items_query = items_query.offset(offset).limit(limit)
+        items = self.session.exec(items_query).all()
+
+        return {"total": total, "items": list(items)}

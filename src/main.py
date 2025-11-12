@@ -7,9 +7,19 @@ configures database table creation on startup.
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from typing import Optional
+from fastapi import FastAPI, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from src.database import create_db_and_tables
-from src.models import Location, Store, Product, LocationRead, StoreRead, ProductRead
+from src.models import (
+    Location,
+    Store,
+    Product,
+    LocationRead,
+    StoreRead,
+    ProductRead,
+    PaginatedResponse,
+)
 from src.services.location_service import LocationService
 from src.services.store_service import StoreService
 from src.services.product_service import ProductService
@@ -91,28 +101,41 @@ def create_location(location_data: Location, service: LocationService = Depends(
     return service.create_location(location_data)
 
 
-@app.get("/locations", response_model=list[LocationRead])
-def get_all_locations(service: LocationService = Depends()):
+@app.get("/locations", response_model=PaginatedResponse[LocationRead])
+def get_all_locations(
+    service: LocationService = Depends(),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+):
     """
-    Retrieve all locations from the database.
+    Retrieve all locations from the database with pagination.
 
     Args:
         service: LocationService injected by FastAPI's dependency injection
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
 
     Returns:
-        list[Location]: List of all location objects in the database
+        PaginatedResponse[LocationRead]: Paginated locations with metadata
 
     Example response:
-        [
-            {"id": 1, "name": "Fridge"},
-            {"id": 2, "name": "Pantry"},
-            {"id": 3, "name": "Freezer"}
-        ]
-
-    The response_model=list[Location] ensures FastAPI validates that we're
-    returning a list of Location objects and formats the output correctly.
+        {
+            "total": 5,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {"id": 1, "name": "Fridge", "created_at": "...", "updated_at": "..."},
+                {"id": 2, "name": "Pantry", "created_at": "...", "updated_at": "..."}
+            ]
+        }
     """
-    return service.get_all_locations()
+    result = service.get_all_locations(offset=offset, limit=limit)
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )
 
 
 @app.post("/stores", response_model=StoreRead)
@@ -139,28 +162,41 @@ def create_store(store_data: Store, service: StoreService = Depends()):
     return service.create_store(store_data)
 
 
-@app.get("/stores", response_model=list[StoreRead])
-def get_all_stores(service: StoreService = Depends()):
+@app.get("/stores", response_model=PaginatedResponse[StoreRead])
+def get_all_stores(
+    service: StoreService = Depends(),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+):
     """
-    Retrieve all stores from the database.
+    Retrieve all stores from the database with pagination.
 
     Args:
         service: StoreService injected by FastAPI's dependency injection
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
 
     Returns:
-        list[Store]: List of all store objects in the database
+        PaginatedResponse[StoreRead]: Paginated stores with metadata
 
     Example response:
-        [
-            {"id": 1, "name": "Lidl"},
-            {"id": 2, "name": "Biedronka"},
-            {"id": 3, "name": "Tesco"}
-        ]
-
-    The response_model=list[Store] ensures FastAPI validates that we're
-    returning a list of Store objects and formats the output correctly.
+        {
+            "total": 3,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {"id": 1, "name": "Lidl", "created_at": "...", "updated_at": "..."},
+                {"id": 2, "name": "Biedronka", "created_at": "...", "updated_at": "..."}
+            ]
+        }
     """
-    return service.get_all_stores()
+    result = service.get_all_stores(offset=offset, limit=limit)
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )
 
 
 @app.post("/products", response_model=ProductRead)
@@ -187,36 +223,66 @@ def create_product(product_data: Product, service: ProductService = Depends()):
             "updated_at": "2025-11-12T10:30:00"
         }
     """
-    return service.create_product(product_data)
+    try:
+        return service.create_product(product_data)
+    except IntegrityError:
+        service.session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Product '{product_data.name}' with brand "
+                f"'{product_data.brand}' already exists."
+            ),
+        )
 
 
-@app.get("/products", response_model=list[ProductRead])
-def get_all_products(service: ProductService = Depends()):
+@app.get("/products", response_model=PaginatedResponse[ProductRead])
+def get_all_products(
+    service: ProductService = Depends(),
+    name: Optional[str] = Query(
+        None, description="Filter by product name (case-insensitive)"
+    ),
+    brand: Optional[str] = Query(
+        None, description="Filter by brand name (case-insensitive)"
+    ),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+):
     """
-    Retrieve all products from the database.
+    Retrieve all products from the database with pagination.
 
     Args:
         service: ProductService injected by FastAPI's dependency injection
+        name: Optional filter by product name (case-insensitive)
+        brand: Optional filter by brand name (case-insensitive)
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
 
     Returns:
-        list[ProductRead]: List of all product objects with timestamps
+        PaginatedResponse[ProductRead]: Paginated products with metadata
 
     Example response:
-        [
-            {
-                "id": 1,
-                "name": "Milk",
-                "brand": "Łaciate",
-                "created_at": "2025-11-12T10:30:00",
-                "updated_at": "2025-11-12T10:30:00"
-            },
-            {
-                "id": 2,
-                "name": "Eggs",
-                "brand": null,
-                "created_at": "2025-11-12T10:31:00",
-                "updated_at": "2025-11-12T10:31:00"
-            }
-        ]
+        {
+            "total": 150,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {
+                    "id": 1,
+                    "name": "Milk",
+                    "brand": "Łaciate",
+                    "created_at": "2025-11-12T10:30:00",
+                    "updated_at": "2025-11-12T10:30:00"
+                }
+            ]
+        }
     """
-    return service.get_all_products()
+    result = service.get_all_products(
+        name=name, brand=brand, offset=offset, limit=limit
+    )
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )
