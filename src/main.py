@@ -9,8 +9,7 @@ configures database table creation on startup.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from src.database import create_db_and_tables
-from src import models  # CRITICAL: Import models so SQLModel can discover them
-from src.models import Location, Store
+from src.models import Location, Store, LocationRead, StoreRead
 from src.services.location_service import LocationService
 from src.services.store_service import StoreService
 
@@ -66,7 +65,7 @@ def read_root():
     return {"message": "KitchenSmartInventory API is running!"}
 
 
-@app.post("/locations", response_model=Location)
+@app.post("/locations", response_model=LocationRead)
 def create_location(location_data: Location, service: LocationService = Depends()):
     """
     Create a new location in the kitchen.
@@ -91,7 +90,7 @@ def create_location(location_data: Location, service: LocationService = Depends(
     return service.create_location(location_data)
 
 
-@app.get("/locations", response_model=list[Location])
+@app.get("/locations", response_model=list[LocationRead])
 def get_all_locations(service: LocationService = Depends()):
     """
     Retrieve all locations from the database.
@@ -115,7 +114,7 @@ def get_all_locations(service: LocationService = Depends()):
     return service.get_all_locations()
 
 
-@app.post("/stores", response_model=Store)
+@app.post("/stores", response_model=StoreRead)
 def create_store(store_data: Store, service: StoreService = Depends()):
     """
     Create a new store in the database.
@@ -139,7 +138,7 @@ def create_store(store_data: Store, service: StoreService = Depends()):
     return service.create_store(store_data)
 
 
-@app.get("/stores", response_model=list[Store])
+@app.get("/stores", response_model=list[StoreRead])
 def get_all_stores(service: StoreService = Depends()):
     """
     Retrieve all stores from the database.

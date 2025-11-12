@@ -11,6 +11,9 @@ __pycache__/
 PROJECT_LOG.md
 
 # Ignored directories
+/reports/
+/instructions/
 /prompts/
 /notebooks/
 /progress/
+database.dbold
