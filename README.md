@@ -47,13 +47,27 @@ Version 0.2 implements the core business logic of the application.
     python -m venv .venv
     .\.venv\Scripts\activate
     ```
-4.  Install dependencies (using the "polluted" file for now):
-    ```shell
-    pip install -r requirements.txt
-    ```
+4.  Install dependencies
+        - Runtime only (to run the API):
+            ```pwsh
+            pip install -r requirements.txt
+            ```
+        - Development tools (formatting, lint):
+            ```pwsh
+            pip install -r requirements-dev.txt
+            ```
 5.  Run the development server from the root folder:
     ```shell
     uvicorn src.main:app --reload
     ```
 6.  Open the auto-generated API documentation (Swagger UI) in your browser:
     **`http://127.0.0.1:8000/docs`**
+
+---
+
+## 📦 Dependencies Split
+
+- `requirements.txt` – minimal runtime: FastAPI, SQLModel, SQLAlchemy, Uvicorn (standard extras)
+- `requirements-dev.txt` – dev tooling: Black, Flake8
+
+Install what you need depending on the use case (runtime vs. development).
