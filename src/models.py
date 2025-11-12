@@ -154,3 +154,11 @@ class StoreRead(SQLModel):
     name: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+
+class ProductRead(SQLModel):
+    id: int
+    name: str
+    brand: Optional[str]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

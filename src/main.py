@@ -9,9 +9,10 @@ configures database table creation on startup.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from src.database import create_db_and_tables
-from src.models import Location, Store, LocationRead, StoreRead
+from src.models import Location, Store, Product, LocationRead, StoreRead, ProductRead
 from src.services.location_service import LocationService
 from src.services.store_service import StoreService
+from src.services.product_service import ProductService
 
 # ============================================================================
 # APPLICATION INITIALIZATION
@@ -160,3 +161,62 @@ def get_all_stores(service: StoreService = Depends()):
     returning a list of Store objects and formats the output correctly.
     """
     return service.get_all_stores()
+
+
+@app.post("/products", response_model=ProductRead)
+def create_product(product_data: Product, service: ProductService = Depends()):
+    """
+    Create a new product in the database.
+
+    Args:
+        product_data: Product object from request body
+        service: ProductService injected by FastAPI's dependency injection
+
+    Returns:
+        ProductRead: The created product with ID and timestamps
+
+    Example request body:
+        {"name": "Milk", "brand": "Łaciate"}
+
+    Example response:
+        {
+            "id": 1,
+            "name": "Milk",
+            "brand": "Łaciate",
+            "created_at": "2025-11-12T10:30:00",
+            "updated_at": "2025-11-12T10:30:00"
+        }
+    """
+    return service.create_product(product_data)
+
+
+@app.get("/products", response_model=list[ProductRead])
+def get_all_products(service: ProductService = Depends()):
+    """
+    Retrieve all products from the database.
+
+    Args:
+        service: ProductService injected by FastAPI's dependency injection
+
+    Returns:
+        list[ProductRead]: List of all product objects with timestamps
+
+    Example response:
+        [
+            {
+                "id": 1,
+                "name": "Milk",
+                "brand": "Łaciate",
+                "created_at": "2025-11-12T10:30:00",
+                "updated_at": "2025-11-12T10:30:00"
+            },
+            {
+                "id": 2,
+                "name": "Eggs",
+                "brand": null,
+                "created_at": "2025-11-12T10:31:00",
+                "updated_at": "2025-11-12T10:31:00"
+            }
+        ]
+    """
+    return service.get_all_products()

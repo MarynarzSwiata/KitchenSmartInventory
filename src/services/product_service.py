@@ -1,0 +1,20 @@
+from fastapi import Depends
+from sqlmodel import Session, select
+from src.database import get_session
+from src.models import Product
+
+
+class ProductService:
+    def __init__(self, session: Session = Depends(get_session)):
+        self.session = session
+
+    def create_product(self, product_data: Product) -> Product:
+        self.session.add(product_data)
+        self.session.commit()
+        self.session.refresh(product_data)
+        return product_data
+
+    def get_all_products(self) -> list[Product]:
+        query = select(Product)
+        products = self.session.exec(query).all()
+        return list(products)
