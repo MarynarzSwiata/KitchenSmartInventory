@@ -6,6 +6,7 @@ __pycache__/
 
 # VS Code
 .vscode/
+.vscodeignore
 
 # Ignored files
 PROJECT_LOG.md
@@ -17,3 +18,4 @@ PROJECT_LOG.md
 /notebooks/
 /progress/
 database.dbold
+.vscodeignore
