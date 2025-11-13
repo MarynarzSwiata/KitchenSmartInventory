@@ -18,7 +18,7 @@ the `TimestampMixin` (database-level defaults and on-update behavior).
 from datetime import date, datetime
 from typing import Optional, TypeVar, Generic
 from pydantic import BaseModel
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 from sqlalchemy import Column, DateTime, func, UniqueConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -53,6 +53,9 @@ class Location(SQLModel, TimestampMixin, table=True):
     # Location name - indexed for fast searches
     name: str = Field(index=True)
 
+    # Relationship to inventory items
+    inventory_items: list["InventoryItem"] = Relationship(back_populates="location")
+
 
 class Store(SQLModel, TimestampMixin, table=True):
     """
@@ -68,6 +71,9 @@ class Store(SQLModel, TimestampMixin, table=True):
 
     # Store name - indexed for fast searches
     name: str = Field(index=True)
+
+    # Relationship to inventory items
+    inventory_items: list["InventoryItem"] = Relationship(back_populates="store")
 
 
 class Product(SQLModel, TimestampMixin, table=True):
@@ -94,6 +100,9 @@ class Product(SQLModel, TimestampMixin, table=True):
 
     # Brand name - optional and indexed (e.g., filter by brand "Łaciate")
     brand: Optional[str] = Field(default=None, index=True)
+
+    # Relationship to inventory items
+    inventory_items: list["InventoryItem"] = Relationship(back_populates="product")
 
 
 class InventoryItem(SQLModel, TimestampMixin, table=True):
@@ -133,14 +142,17 @@ class InventoryItem(SQLModel, TimestampMixin, table=True):
     product_id: int = Field(
         foreign_key="product.id"
     )  # REQUIRED: Every item must be a product - links to Product.id
+    product: "Product" = Relationship(back_populates="inventory_items")
 
     location_id: int = Field(
         foreign_key="location.id"
     )  # REQUIRED: Every item must be somewhere - links to Location.id
+    location: "Location" = Relationship(back_populates="inventory_items")
 
     store_id: Optional[int] = Field(
         default=None, foreign_key="store.id"
     )  # OPTIONAL: We might not know where it was bought - links to Store.id
+    store: Optional["Store"] = Relationship(back_populates="inventory_items")
 
 
 # ============================================================================
@@ -175,3 +187,58 @@ class PaginatedResponse(BaseModel, Generic[T]):
     offset: int
     limit: int
     items: list[T]
+
+
+# ============================================================================
+# InventoryItem API Schemas
+# ============================================================================
+
+
+class InventoryItemCreate(SQLModel):
+    """Schema for creating a new inventory item (API input)."""
+
+    product_id: int
+    location_id: int
+    store_id: Optional[int] = None
+    quantity: float
+    purchase_date: Optional[date] = None
+    expiration_date: Optional[date] = None
+    price: Optional[float] = None
+
+
+class InventoryItemUpdate(SQLModel):
+    """Schema for updating an inventory item (API input)."""
+
+    product_id: Optional[int] = None
+    location_id: Optional[int] = None
+    store_id: Optional[int] = None
+    quantity: Optional[float] = None
+    purchase_date: Optional[date] = None
+    expiration_date: Optional[date] = None
+    price: Optional[float] = None
+
+
+class InventoryItemRead(SQLModel):
+    """Schema for reading an inventory item (API output, basic)."""
+
+    id: int
+    product_id: int
+    location_id: int
+    store_id: Optional[int]
+    quantity: float
+    purchase_date: Optional[date]
+    expiration_date: Optional[date]
+    price: Optional[float]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class InventoryItemReadWithRelations(InventoryItemRead):
+    """
+    Schema for reading an inventory item with related entities
+    (API output, detailed).
+    """
+
+    product: ProductRead
+    location: LocationRead
+    store: Optional[StoreRead] = None

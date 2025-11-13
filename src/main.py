@@ -19,10 +19,13 @@ from src.models import (
     StoreRead,
     ProductRead,
     PaginatedResponse,
+    InventoryItemCreate,
+    InventoryItemReadWithRelations,
 )
 from src.services.location_service import LocationService
 from src.services.store_service import StoreService
 from src.services.product_service import ProductService
+from src.services.inventory_service import InventoryService
 
 # ============================================================================
 # APPLICATION INITIALIZATION
@@ -279,6 +282,125 @@ def get_all_products(
     """
     result = service.get_all_products(
         name=name, brand=brand, offset=offset, limit=limit
+    )
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )
+
+
+@app.post("/inventory_items", response_model=InventoryItemReadWithRelations)
+def create_inventory_item(
+    item: InventoryItemCreate, service: InventoryService = Depends()
+):
+    """
+    Create a new inventory item.
+
+    Validates that the referenced product, location, and store (if provided)
+    exist before creating the item. Returns the created item with all
+    related entities loaded.
+
+    Args:
+        item: InventoryItemCreate object from request body
+        service: InventoryService injected by FastAPI's dependency injection
+
+    Returns:
+        InventoryItemReadWithRelations: The created item with related entities
+
+    Raises:
+        HTTPException 404: If product_id, location_id, or store_id not found
+
+    Example request body:
+        {
+            "product_id": 1,
+            "location_id": 2,
+            "store_id": 1,
+            "quantity": 2.5,
+            "purchase_date": "2025-11-10",
+            "expiration_date": "2025-11-20",
+            "price": 12.99
+        }
+
+    Example response:
+        {
+            "id": 1,
+            "product_id": 1,
+            "location_id": 2,
+            "store_id": 1,
+            "quantity": 2.5,
+            "purchase_date": "2025-11-10",
+            "expiration_date": "2025-11-20",
+            "price": 12.99,
+            "created_at": "2025-11-12T10:30:00",
+            "updated_at": "2025-11-12T10:30:00",
+            "product": {"id": 1, "name": "Milk", "brand": "Łaciate", ...},
+            "location": {"id": 2, "name": "Fridge", ...},
+            "store": {"id": 1, "name": "Lidl", ...}
+        }
+    """
+    return service.create_inventory_item(item)
+
+
+@app.get(
+    "/inventory_items", response_model=PaginatedResponse[InventoryItemReadWithRelations]
+)
+def get_inventory_items(
+    service: InventoryService = Depends(),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+    location_id: Optional[int] = Query(None, description="Filter by Location ID"),
+    product_id: Optional[int] = Query(None, description="Filter by Product ID"),
+):
+    """
+    Retrieve all inventory items with pagination and optional filtering.
+
+    Returns items with all related entities (product, location, store) loaded.
+    Supports filtering by location and/or product.
+
+    Args:
+        service: InventoryService injected by FastAPI's dependency injection
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
+        location_id: Optional filter by location ID
+        product_id: Optional filter by product ID
+
+    Returns:
+        PaginatedResponse[InventoryItemReadWithRelations]: Paginated items
+
+    Example response:
+        {
+            "total": 45,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {
+                    "id": 1,
+                    "product_id": 1,
+                    "location_id": 2,
+                    "store_id": 1,
+                    "quantity": 2.5,
+                    "purchase_date": "2025-11-10",
+                    "expiration_date": "2025-11-20",
+                    "price": 12.99,
+                    "created_at": "2025-11-12T10:30:00",
+                    "updated_at": "2025-11-12T10:30:00",
+                    "product": {"id": 1, "name": "Milk", "brand": "Łaciate", ...},
+                    "location": {"id": 2, "name": "Fridge", ...},
+                    "store": {"id": 1, "name": "Lidl", ...}
+                }
+            ]
+        }
+
+    Example queries:
+        - All items: GET /inventory_items
+        - Items in fridge: GET /inventory_items?location_id=2
+        - Milk products: GET /inventory_items?product_id=1
+        - Milk in fridge: GET /inventory_items?location_id=2&product_id=1
+    """
+    result = service.get_inventory_items(
+        offset=offset, limit=limit, location_id=location_id, product_id=product_id
     )
     return PaginatedResponse(
         total=result["total"],
