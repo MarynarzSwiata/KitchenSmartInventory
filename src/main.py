@@ -408,3 +408,81 @@ def get_inventory_items(
         offset=offset,
         limit=limit,
     )
+
+
+@app.get(
+    "/locations/{location_id}/items",
+    response_model=PaginatedResponse[InventoryItemReadWithRelations],
+)
+def get_location_items(
+    location_id: int,
+    service: InventoryService = Depends(),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+    product_id: Optional[int] = Query(None, description="Filter by Product ID"),
+    store_id: Optional[int] = Query(None, description="Filter by Store ID"),
+):
+    """
+    Retrieve inventory items for a specific location.
+
+    Returns paginated items assigned to the given location, with all related
+    entities (product, location, store) loaded. Supports optional filtering
+    by product and/or store.
+
+    Args:
+        location_id: The ID of the location to retrieve items for
+        service: InventoryService injected by FastAPI's dependency injection
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
+        product_id: Optional filter by product ID
+        store_id: Optional filter by store ID
+
+    Returns:
+        PaginatedResponse[InventoryItemReadWithRelations]: Paginated items
+
+    Raises:
+        HTTPException 404: If location with given ID does not exist
+
+    Example response:
+        {
+            "total": 12,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {
+                    "id": 1,
+                    "product_id": 1,
+                    "location_id": 2,
+                    "store_id": 1,
+                    "quantity": 2.5,
+                    "purchase_date": "2025-11-10",
+                    "expiration_date": "2025-11-20",
+                    "price": 12.99,
+                    "created_at": "2025-11-12T10:30:00",
+                    "updated_at": "2025-11-12T10:30:00",
+                    "product": {"id": 1, "name": "Milk", "brand": "Łaciate", ...},
+                    "location": {"id": 2, "name": "Fridge", ...},
+                    "store": {"id": 1, "name": "Lidl", ...}
+                }
+            ]
+        }
+
+    Example queries:
+        - All items in fridge: GET /locations/2/items
+        - Milk in fridge: GET /locations/2/items?product_id=1
+        - Items from Lidl in fridge: GET /locations/2/items?store_id=1
+        - Milk from Lidl in fridge: GET /locations/2/items?product_id=1&store_id=1
+    """
+    result = service.get_inventory_items_for_location(
+        location_id=location_id,
+        offset=offset,
+        limit=limit,
+        product_id=product_id,
+        store_id=store_id,
+    )
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )

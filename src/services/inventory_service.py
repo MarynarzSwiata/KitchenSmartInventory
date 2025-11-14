@@ -56,6 +56,22 @@ class InventoryService:
             )
         return item
 
+    def _ensure_location_exists(self, location_id: int):
+        """
+        Internal helper to validate that a location exists.
+
+        Args:
+            location_id: The ID of the location to validate
+
+        Raises:
+            HTTPException: 404 if location not found
+        """
+        if not self.session.get(Location, location_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Location with id {location_id} not found",
+            )
+
     def _validate_foreign_keys(
         self,
         product_id: int,
@@ -188,6 +204,70 @@ class InventoryService:
             count_query = count_query.where(InventoryItem.location_id == location_id)
         if product_id is not None:
             count_query = count_query.where(InventoryItem.product_id == product_id)
+
+        total = self.session.exec(count_query).one()
+
+        return {"total": total, "items": list(items)}
+
+    def get_inventory_items_for_location(
+        self,
+        location_id: int,
+        offset: int,
+        limit: int,
+        product_id: Optional[int] = None,
+        store_id: Optional[int] = None,
+    ) -> dict:
+        """
+        Gets paginated inventory items for a specific location.
+
+        This method validates that the location exists, then retrieves all
+        inventory items in that location with optional filtering by product
+        and/or store. Uses the same optimized two-query pattern as
+        get_inventory_items.
+
+        Args:
+            location_id: ID of the location to filter by (required)
+            offset: Number of records to skip (pagination)
+            limit: Maximum number of records to return
+            product_id: Optional filter by product ID
+            store_id: Optional filter by store ID
+
+        Returns:
+            dict: Dictionary with 'total' count and 'items' list,
+                  ready to be wrapped in PaginatedResponse
+
+        Raises:
+            HTTPException: 404 if location not found
+        """
+        # Validate that location exists
+        self._ensure_location_exists(location_id)
+
+        # Base query for items (always filtered by location)
+        items_query = select(InventoryItem).where(
+            InventoryItem.location_id == location_id
+        )
+
+        # Apply optional filters
+        if product_id is not None:
+            items_query = items_query.where(InventoryItem.product_id == product_id)
+        if store_id is not None:
+            items_query = items_query.where(InventoryItem.store_id == store_id)
+
+        # Get paginated results
+        items = self.session.exec(items_query.offset(offset).limit(limit)).all()
+
+        # Optimized count query (no subquery) - per contract 025
+        count_query = (
+            select(func.count())
+            .select_from(InventoryItem)
+            .where(InventoryItem.location_id == location_id)
+        )
+
+        # Apply same optional filters to count query
+        if product_id is not None:
+            count_query = count_query.where(InventoryItem.product_id == product_id)
+        if store_id is not None:
+            count_query = count_query.where(InventoryItem.store_id == store_id)
 
         total = self.session.exec(count_query).one()
 
