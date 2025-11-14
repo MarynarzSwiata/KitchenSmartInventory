@@ -21,11 +21,14 @@ from models import (
     PaginatedResponse,
     InventoryItemCreate,
     InventoryItemReadWithRelations,
+    ShoppingListItemCreate,
+    ShoppingListItemReadWithRelations,
 )
 from services.location_service import LocationService
 from services.store_service import StoreService
 from services.product_service import ProductService
 from services.inventory_service import InventoryService
+from services.shopping_list_service import ShoppingListService
 
 # ============================================================================
 # APPLICATION INITIALIZATION
@@ -486,3 +489,133 @@ def get_location_items(
         offset=offset,
         limit=limit,
     )
+
+
+@app.post("/shopping-list", response_model=ShoppingListItemReadWithRelations)
+def create_shopping_list_item(
+    item_data: ShoppingListItemCreate, service: ShoppingListService = Depends()
+):
+    """
+    Create a new shopping list item.
+
+    Validates that the referenced product and store (if provided) exist
+    before creating the item. Returns the created item with all related
+    entities loaded.
+
+    Args:
+        item_data: ShoppingListItemCreate object from request body
+        service: ShoppingListService injected by FastAPI's dependency injection
+
+    Returns:
+        ShoppingListItemReadWithRelations: The created item with related entities
+
+    Raises:
+        HTTPException 404: If product_id or store_id not found
+
+    Example request body:
+        {
+            "product_id": 1,
+            "store_id": 2,
+            "quantity": 3.0,
+            "note": "Buy the large pack"
+        }
+
+    Example response:
+        {
+            "id": 1,
+            "product_id": 1,
+            "store_id": 2,
+            "quantity": 3.0,
+            "note": "Buy the large pack",
+            "created_at": "2025-11-12T14:30:00",
+            "updated_at": "2025-11-12T14:30:00",
+            "product": {"id": 1, "name": "Milk", "brand": "Łaciate", ...},
+            "store": {"id": 2, "name": "Lidl", ...}
+        }
+    """
+    return service.create_shopping_list_item(item_data)
+
+
+@app.get(
+    "/shopping-list",
+    response_model=PaginatedResponse[ShoppingListItemReadWithRelations],
+)
+def get_shopping_list(
+    service: ShoppingListService = Depends(),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=250),
+    product_id: Optional[int] = Query(None, description="Filter by Product ID"),
+    store_id: Optional[int] = Query(None, description="Filter by Store ID"),
+):
+    """
+    Retrieve all shopping list items with pagination and optional filtering.
+
+    Returns items with all related entities (product, store) loaded.
+    Supports filtering by product and/or store.
+
+    Args:
+        service: ShoppingListService injected by FastAPI's dependency injection
+        offset: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (1-250)
+        product_id: Optional filter by product ID
+        store_id: Optional filter by store ID
+
+    Returns:
+        PaginatedResponse[ShoppingListItemReadWithRelations]: Paginated items
+
+    Example response:
+        {
+            "total": 8,
+            "offset": 0,
+            "limit": 100,
+            "items": [
+                {
+                    "id": 1,
+                    "product_id": 1,
+                    "store_id": 2,
+                    "quantity": 3.0,
+                    "note": "Buy the large pack",
+                    "created_at": "2025-11-12T14:30:00",
+                    "updated_at": "2025-11-12T14:30:00",
+                    "product": {"id": 1, "name": "Milk", "brand": "Łaciate", ...},
+                    "store": {"id": 2, "name": "Lidl", ...}
+                }
+            ]
+        }
+
+    Example queries:
+        - All items: GET /shopping-list
+        - Specific product: GET /shopping-list?product_id=1
+        - Items from specific store: GET /shopping-list?store_id=2
+        - Product from store: GET /shopping-list?product_id=1&store_id=2
+    """
+    result = service.get_shopping_list(
+        offset=offset, limit=limit, product_id=product_id, store_id=store_id
+    )
+    return PaginatedResponse(
+        total=result["total"],
+        items=result["items"],
+        offset=offset,
+        limit=limit,
+    )
+
+
+@app.delete("/shopping-list/{item_id}")
+def delete_shopping_list_item(item_id: int, service: ShoppingListService = Depends()):
+    """
+    Delete a shopping list item by its ID.
+
+    Args:
+        item_id: The ID of the shopping list item to delete
+        service: ShoppingListService injected by FastAPI's dependency injection
+
+    Returns:
+        dict: Success indicator {"ok": True}
+
+    Raises:
+        HTTPException 404: If item with given ID does not exist
+
+    Example response:
+        {"ok": true}
+    """
+    return service.delete_shopping_list_item(item_id)
