@@ -1,8 +1,8 @@
 from fastapi import Depends
 from sqlmodel import Session, select, func
 from typing import Optional
-from src.database import get_session
-from src.models import Product
+from database import get_session
+from models import Product
 
 
 class ProductService:

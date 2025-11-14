@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
-from src.database import create_db_and_tables
-from src.models import (
+from database import create_db_and_tables
+from models import (
     Location,
     Store,
     Product,
@@ -22,10 +22,10 @@ from src.models import (
     InventoryItemCreate,
     InventoryItemReadWithRelations,
 )
-from src.services.location_service import LocationService
-from src.services.store_service import StoreService
-from src.services.product_service import ProductService
-from src.services.inventory_service import InventoryService
+from services.location_service import LocationService
+from services.store_service import StoreService
+from services.product_service import ProductService
+from services.inventory_service import InventoryService
 
 # ============================================================================
 # APPLICATION INITIALIZATION

@@ -10,8 +10,8 @@ The service uses Dependency Injection to receive a database session from FastAPI
 
 from fastapi import Depends
 from sqlmodel import Session, select, func
-from src.database import get_session
-from src.models import Location
+from database import get_session
+from models import Location
 
 
 class LocationService:
