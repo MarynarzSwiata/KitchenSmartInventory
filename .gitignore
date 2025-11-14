@@ -8,14 +8,10 @@ __pycache__/
 .vscode/
 .vscodeignore
 
-# Ignored files
-PROJECT_LOG.md
-
 # Ignored directories
 /reports/
 /instructions/
-/prompts/
+/pmpt/
 /notebooks/
-/progress/
-database.dbold
-.vscodeignore
+/state/
+/start/
